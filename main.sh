@@ -55,6 +55,8 @@ echo ""
 PASOS=(
     "00-sistema.sh"
     "01-usuario.sh"
+    "02-temas.sh"
+    "03-aplicaciones.sh"
 )
 
 TOTAL=${#PASOS[@]}
