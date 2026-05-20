@@ -221,6 +221,43 @@ else
     echo "[OK] Packet Tracer instalado"
 fi
 
+# =============================================================
+# REGISTRAR IMÁGENES IOU EN GNS3 VIA API
+# =============================================================
+echo ""
+echo "  Registrando imágenes IOU en GNS3..."
+
+# Arrancar gns3server en background como el usuario redsi
+sudo -u "$USUARIO" gns3server --daemon --log /tmp/gns3server.log
+sleep 5  # esperar a que levante
+
+GNS3_API="http://localhost:3080/v2"
+
+# Registrar imagen L3 (Router)
+curl -s -X POST "$GNS3_API/iou/templates" \
+    -H "Content-Type: application/json" \
+    -d "{
+        \"name\": \"IOU-L3\",
+        \"template_type\": \"iou\",
+        \"path\": \"$GNS3_IMAGES_DIR/x86_64_crb_linux-adventerprisek9-ms.iol\",
+        \"use_default_iou_values\": true,
+        \"l1_keepalives\": false
+    }"
+
+# Registrar imagen L2 (Switch)
+curl -s -X POST "$GNS3_API/iou/templates" \
+    -H "Content-Type: application/json" \
+    -d "{
+        \"name\": \"IOU-L2\",
+        \"template_type\": \"iou\",
+        \"path\": \"$GNS3_IMAGES_DIR/x86_64_crb_linux_l2-adventerprisek9-ms.iol\",
+        \"use_default_iou_values\": true,
+        \"l1_keepalives\": false
+    }"
+
+# Apagar el servidor
+sudo -u "$USUARIO" gns3server --stop
+echo "  [OK] Imágenes IOU registradas en GNS3"
 
 # =============================================================
 # 5. KITTY (emulador de terminal)
