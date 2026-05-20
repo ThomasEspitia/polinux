@@ -156,10 +156,15 @@ NoDisplay=true
 X-GNOME-Autostart-enabled=true
 """)
 
+
 print(f"  Licencia IOU: {hostname} = {iouLicense}")
 print(f"  Guardada en : {home}/.iourc")
 print(f"  Guardada en : {home}/GNS3/images/iourc")
 PYEOF
+
+chown "${USUARIO}:${USUARIO}" "$LAB_HOME/.iourc"
+chmod 644 "$LAB_HOME/.iourc"
+
 
 if ! grep -q "xml.cisco.com" /etc/hosts; then
     echo "127.0.0.127 xml.cisco.com" >> /etc/hosts
