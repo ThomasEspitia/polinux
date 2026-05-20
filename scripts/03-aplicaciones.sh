@@ -212,6 +212,8 @@ else
 
     expect -c "
     spawn dpkg -i $PT_DEB
+    expect \"Press q to quit\"
+    send \"q\"
     expect \"enter 1, 2 or 3\"
     send \"2\r\"
     expect eof
