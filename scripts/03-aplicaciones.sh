@@ -229,8 +229,7 @@ echo ""
 echo "[5/6] Instalando Kitty..."
 
 # Instalar via instalador oficial (más actualizado que apt)
-curl -L https://sw.kovidgoyal.net/kitty/installer.sh | \
-    sudo -u "$USUARIO" sh /dev/stdin launch=n
+sudo -u "$USUARIO" bash -c 'curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin launch=n'
 
 # Crear enlaces simbólicos
 ln -sf "$LAB_HOME/.local/kitty.app/bin/kitty" /usr/local/bin/kitty
