@@ -42,6 +42,8 @@ echo "[1/6] Instalando herramientas de red..."
 
 # Responder 'yes' automáticamente al diálogo de Wireshark
 
+echo "ubridge ubridge/install-setuid boolean true" | debconf-set-selections
+
 echo "iperf3 iperf3/start_daemon boolean false" | debconf-set-selections
 
 echo "wireshark-common wireshark-common/install-setuid boolean true" \
@@ -197,22 +199,19 @@ echo "[OK] Licencia IOU generada y configurada"
 # =============================================================
 # 4. PACKET TRACER
 # =============================================================
+
 echo ""
 echo "[4/6] Instalando Cisco Packet Tracer..."
-
 PT_DEB=$(find "$PAQUETES_DIR" -maxdepth 1 -name "CiscoPacketTracer*.deb" | head -1)
-
 if [ -z "$PT_DEB" ]; then
     echo "  [WARN] No se encontró el .deb de Packet Tracer en $PAQUETES_DIR"
     echo "         Descárgalo desde https://netacad.com y colócalo en paquetes/"
 else
     echo "  Instalando: $(basename $PT_DEB)"
-    # Aceptar EULA automáticamente
-    echo "packettracer packettracer/accept-eula boolean true" \
-        | debconf-set-selections
-    dpkg -i "$PT_DEB" || apt install -f -y
+    echo "2" | dpkg -i "$PT_DEB"
     echo "[OK] Packet Tracer instalado"
 fi
+
 
 # =============================================================
 # 5. KITTY (emulador de terminal)
