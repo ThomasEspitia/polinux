@@ -9,6 +9,7 @@
 #   - Herramientas de red (wireshark, nmap, zenmap, tcpdump, etc.)
 #   - GNS3 (GUI completa + imágenes IOU + licencia dinámica + tema Classic)
 #   - Packet Tracer (desde .deb local)
+#   - Google Chrome (navegador predeterminado)
 #   - Kitty (emulador de terminal)
 #   - PuTTY (cliente SSH/Telnet)
 #   - Utilidades generales
@@ -38,7 +39,7 @@ echo "============================================="
 # 1. HERRAMIENTAS DE RED (repositorios oficiales)
 # =============================================================
 echo ""
-echo "[1/6] Instalando herramientas de red..."
+echo "[1/7] Instalando herramientas de red..."
 
 echo "wireshark-common wireshark-common/install-setuid boolean true" \
     | debconf-set-selections
@@ -80,7 +81,7 @@ echo "[OK] Herramientas de red instaladas"
 # 2. GNS3
 # =============================================================
 echo ""
-echo "[2/6] Instalando GNS3..."
+echo "[2/7] Instalando GNS3..."
 
 add-apt-repository -y ppa:gns3/ppa
 apt update
@@ -99,7 +100,7 @@ echo "[OK] GNS3 instalado"
 # 3. IMÁGENES IOU Y LICENCIA GNS3
 # =============================================================
 echo ""
-echo "[3/6] Configurando imágenes IOU y licencia GNS3..."
+echo "[3/7] Configurando imágenes IOU y licencia GNS3..."
 
 GNS3_IMAGES_DIR="$LAB_HOME/GNS3/images/IOU"
 GNS3_SKEL_DIR="$LAB_SKEL/GNS3/images/IOU"
@@ -156,7 +157,6 @@ NoDisplay=true
 X-GNOME-Autostart-enabled=true
 """)
 
-
 print(f"  Licencia IOU: {hostname} = {iouLicense}")
 print(f"  Guardada en : {home}/.iourc")
 print(f"  Guardada en : {home}/GNS3/images/iourc")
@@ -164,7 +164,6 @@ PYEOF
 
 chown "${USUARIO}:${USUARIO}" "$LAB_HOME/.iourc"
 chmod 644 "$LAB_HOME/.iourc"
-
 
 if ! grep -q "xml.cisco.com" /etc/hosts; then
     echo "127.0.0.127 xml.cisco.com" >> /etc/hosts
@@ -180,10 +179,8 @@ echo "[OK] Imágenes IOU y licencia generada"
 echo ""
 echo "  Configurando GNS3 via API..."
 
-# Arrancar gns3server como el usuario
 sudo -u "$USUARIO" gns3server --daemon --log /tmp/gns3server.log --pid /tmp/gns3server.pid
 
-# Esperar activamente a que la API responda (máx 30s)
 echo "  Esperando que GNS3 server arranque..."
 INTENTOS=0
 until curl -s "http://localhost:3080/v2/version" | grep -q "version"; do
@@ -199,7 +196,6 @@ echo "  [OK] GNS3 server listo"
 
 GNS3_API="http://localhost:3080/v2"
 
-# Detectar si el servidor tiene autenticación
 GNS3_CONF="$LAB_HOME/.config/GNS3/2.2/gns3_server.conf"
 GNS3_AUTH_ARGS=""
 if [ -f "$GNS3_CONF" ] && grep -q "^password" "$GNS3_CONF"; then
@@ -208,26 +204,22 @@ if [ -f "$GNS3_CONF" ] && grep -q "^password" "$GNS3_CONF"; then
     GNS3_AUTH_ARGS="-u $GNS3_USER:$GNS3_PASS"
 fi
 
-# Registrar template IOU-L3 (Router)
 curl -s $GNS3_AUTH_ARGS -X POST "$GNS3_API/templates" \
     -H "Content-Type: application/json" \
     -d '{"name":"IOU-L3","template_type":"iou","path":"x86_64_crb_linux-adventerprisek9-ms.iol","compute_id":"local","category":"router","symbol":":/symbols/router.svg"}' > /dev/null
 echo "  [OK] Template IOU-L3 registrado"
 
-# Registrar template IOU-L2 (Switch)
 curl -s $GNS3_AUTH_ARGS -X POST "$GNS3_API/templates" \
     -H "Content-Type: application/json" \
     -d '{"name":"IOU-L2","template_type":"iou","path":"x86_64_crb_linux_l2-adventerprisek9-ms.iol","compute_id":"local","category":"switch","symbol":":/symbols/ethernet_switch.svg"}' > /dev/null
 echo "  [OK] Template IOU-L2 registrado"
 
-# Configurar licencia IOU via API
 IOURC_JSON=$(python3 -c "import json; print(json.dumps(open('$LAB_HOME/.iourc').read()))")
 curl -s $GNS3_AUTH_ARGS -X PUT "$GNS3_API/iou_license" \
     -H "Content-Type: application/json" \
     -d "{\"iourc_content\": $IOURC_JSON, \"license_check\": true}" > /dev/null
 echo "  [OK] Licencia IOU configurada en GNS3"
 
-# Apagar servidor
 kill $(cat /tmp/gns3server.pid 2>/dev/null) 2>/dev/null || pkill -f gns3server || true
 sleep 2
 
@@ -248,14 +240,13 @@ if [ -f "$GNS3_GUI_CONF" ]; then
     echo "  [OK] Tema Classic aplicado en $GNS3_GUI_CONF"
 else
     mkdir -p "$(dirname "$GNS3_GUI_CONF")"
-    cat > "$GNS3_GUI_CONF" << 'EOF'
+    cat > "$GNS3_GUI_CONF" << 'GNSEOF'
 [GUI]
 style = Classic
-EOF
+GNSEOF
     echo "  [OK] Archivo gns3_gui.conf creado con tema Classic"
 fi
 
-# Copiar a skel para usuarios futuros
 GNS3_SKEL_CONF="$LAB_SKEL/.config/GNS3/2.2"
 mkdir -p "$GNS3_SKEL_CONF"
 cp "$GNS3_GUI_CONF" "$GNS3_SKEL_CONF/gns3_gui.conf"
@@ -270,7 +261,7 @@ echo "[OK] GNS3 configurado completamente"
 # 4. PACKET TRACER
 # =============================================================
 echo ""
-echo "[4/6] Instalando Cisco Packet Tracer..."
+echo "[4/7] Instalando Cisco Packet Tracer..."
 
 PT_DEB=$(find "$PAQUETES_DIR" -maxdepth 1 -name "CiscoPacketTracer*.deb" | head -1)
 
@@ -292,10 +283,41 @@ else
 fi
 
 # =============================================================
-# 5. KITTY (emulador de terminal)
+# 5. GOOGLE CHROME
 # =============================================================
 echo ""
-echo "[5/6] Instalando Kitty..."
+echo "[5/7] Instalando Google Chrome..."
+
+CHROME_TMP="/tmp/google-chrome-stable_current_amd64.deb"
+wget -q --show-progress \
+    "https://dl.google.com/linux/direct/google-chrome-stable_current_amd64.deb" \
+    -O "$CHROME_TMP"
+
+apt install -y "$CHROME_TMP"
+rm -f "$CHROME_TMP"
+
+# Configurar Chrome como navegador predeterminado para el usuario
+sudo -u "$USUARIO" xdg-settings set default-web-browser google-chrome.desktop 2>/dev/null || \
+sudo -u "$USUARIO" xdg-mime default google-chrome.desktop x-scheme-handler/http \
+    x-scheme-handler/https text/html 2>/dev/null || true
+
+# Configurar en skel para usuarios futuros
+mkdir -p "$LAB_SKEL/.config"
+cat > "$LAB_SKEL/.config/mimeapps.list" << MIMEEOF
+[Default Applications]
+x-scheme-handler/http=google-chrome.desktop
+x-scheme-handler/https=google-chrome.desktop
+text/html=google-chrome.desktop
+application/xhtml+xml=google-chrome.desktop
+MIMEEOF
+
+echo "[OK] Google Chrome instalado y configurado como navegador predeterminado"
+
+# =============================================================
+# 6. KITTY (emulador de terminal)
+# =============================================================
+echo ""
+echo "[6/7] Instalando Kitty..."
 
 sudo -u "$USUARIO" bash -c 'curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin launch=n'
 
@@ -311,10 +333,10 @@ cp -r "$LAB_HOME/.local/kitty.app" "$LAB_SKEL/.local/" 2>/dev/null || true
 echo "[OK] Kitty instalado"
 
 # =============================================================
-# 6. LIMPIEZA
+# 7. LIMPIEZA
 # =============================================================
 echo ""
-echo "[6/6] Limpiando paquetes innecesarios..."
+echo "[7/7] Limpiando paquetes innecesarios..."
 apt autoremove -y
 apt autoclean
 
@@ -324,6 +346,7 @@ echo " PASO 03 COMPLETADO - Aplicaciones instaladas"
 echo " Wireshark : $(wireshark --version 2>/dev/null | head -1 || echo 'instalado')"
 echo " Nmap      : $(nmap --version 2>/dev/null | head -1 || echo 'instalado')"
 echo " GNS3      : $(gns3server --version 2>/dev/null || echo 'instalado')"
+echo " Chrome    : $(google-chrome --version 2>/dev/null || echo 'instalado')"
 echo " Kitty     : $(kitty --version 2>/dev/null || echo 'instalado')"
 echo " PT        : $(which packettracer &>/dev/null && echo 'instalado' || echo 'no encontrado')"
 echo " IOU       : $(hostname) licencia generada"

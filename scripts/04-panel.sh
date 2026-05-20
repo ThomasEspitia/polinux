@@ -6,10 +6,11 @@
 # 04-panel.sh — Panel, applets y desklets de Cinnamon
 #
 # Qué hace:
-#   - Instala applets manuales (ipindicator, sshlauncher)
-#     desde extras/applets/ del repo
-#   - Instala desklets manuales desde extras/desklets/ del repo
+#   - Copia el logo del Politécnico a /usr/share/pixmaps/
+#   - Instala applets manuales desde extras/applets/
+#   - Instala desklets manuales desde extras/desklets/
 #   - Aplica configuración del panel a redsi vía dconf
+#   - Configura JSON de applets (logo menú, workspace, ipindicator)
 #   - Prepara autostart en skel para usuarios futuros
 #
 # Uso individual: sudo bash scripts/04-panel.sh
@@ -30,6 +31,8 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 APPLETS_SRC="$REPO_DIR/extras/applets"
 DESKLETS_SRC="$REPO_DIR/extras/desklets"
+MENU_ICON_SRC="$REPO_DIR/extras/menu-icon/poli-light.png"
+MENU_ICON_DST="/usr/share/pixmaps/poli-light.png"
 
 APPLETS_SYSTEM="/usr/share/cinnamon/applets"
 DESKLETS_SYSTEM="/usr/share/cinnamon/desklets"
@@ -39,65 +42,71 @@ echo " PASO 04: Configurando panel de Cinnamon..."
 echo "============================================="
 
 # =============================================================
-# 1. APPLETS MANUALES
+# 1. LOGO DEL MENÚ
 # =============================================================
 echo ""
-echo "[1/4] Instalando applets manuales..."
+echo "[1/5] Instalando logo del menú..."
+
+if [ ! -f "$MENU_ICON_SRC" ]; then
+    echo "  [WARN] No se encontró $MENU_ICON_SRC"
+    echo "         El menú usará el ícono por defecto de Mint."
+    MENU_ICON_DST="linuxmint-logo-ring-symbolic"
+else
+    cp "$MENU_ICON_SRC" "$MENU_ICON_DST"
+    chmod 644 "$MENU_ICON_DST"
+    echo "  [OK] Logo copiado a $MENU_ICON_DST"
+fi
+
+# =============================================================
+# 2. APPLETS MANUALES
+# =============================================================
+echo ""
+echo "[2/5] Instalando applets manuales..."
 
 if [ ! -d "$APPLETS_SRC" ]; then
-    echo "  [WARN] No se encontró $APPLETS_SRC"
-    echo "         Copia los applets al repo primero (ver instrucciones al final)."
+    echo "  [WARN] No se encontró $APPLETS_SRC, omitiendo."
 else
     for applet_dir in "$APPLETS_SRC"/*/; do
         applet_name=$(basename "$applet_dir")
-
-        # Instalar en el sistema (disponible para todos los usuarios)
         cp -r "$applet_dir" "$APPLETS_SYSTEM/$applet_name"
         echo "  [OK] Applet instalado: $applet_name"
 
-        # También en skel para usuarios futuros
         mkdir -p "$LAB_SKEL/.local/share/cinnamon/applets"
         cp -r "$applet_dir" "$LAB_SKEL/.local/share/cinnamon/applets/$applet_name"
     done
-
     echo "[OK] Applets manuales instalados"
 fi
 
 # =============================================================
-# 2. DESKLETS MANUALES
+# 3. DESKLETS MANUALES
 # =============================================================
 echo ""
-echo "[2/4] Instalando desklets manuales..."
+echo "[3/5] Instalando desklets manuales..."
 
 if [ ! -d "$DESKLETS_SRC" ]; then
-    echo "  [WARN] No se encontró $DESKLETS_SRC"
-    echo "         Copia los desklets al repo primero (ver instrucciones al final)."
+    echo "  [WARN] No se encontró $DESKLETS_SRC, omitiendo."
 else
     for desklet_dir in "$DESKLETS_SRC"/*/; do
         desklet_name=$(basename "$desklet_dir")
-
-        # Instalar en el sistema
         cp -r "$desklet_dir" "$DESKLETS_SYSTEM/$desklet_name"
         echo "  [OK] Desklet instalado: $desklet_name"
 
-        # También en skel
         mkdir -p "$LAB_SKEL/.local/share/cinnamon/desklets"
         cp -r "$desklet_dir" "$LAB_SKEL/.local/share/cinnamon/desklets/$desklet_name"
     done
-
     echo "[OK] Desklets manuales instalados"
 fi
 
 # =============================================================
-# 3. CONFIGURACIÓN DEL PANEL — usuario redsi
+# 4. CONFIGURACIÓN DEL PANEL Y APPLETS — usuario redsi
 # =============================================================
 echo ""
-echo "[3/4] Aplicando configuración del panel a $USUARIO..."
+echo "[4/5] Aplicando configuración del panel a $USUARIO..."
 
-aplicar_panel_usuario() {
+# --- Función: aplica dconf del panel ---
+aplicar_dconf_panel() {
     local DEST_USER="$1"
 
-    # --- Applets y su distribución en el panel ---
     sudo -u "$DEST_USER" dconf write /org/cinnamon/enabled-applets \
         "['panel1:left:0:menu@cinnamon.org:0', \
 'panel1:left:3:network@cinnamon.org:10', \
@@ -112,33 +121,26 @@ aplicar_panel_usuario() {
 'panel1:right:16:calendar@cinnamon.org:13', \
 'panel1:right:17:cornerbar@cinnamon.org:14']"
 
-    # --- Tamaño del panel ---
     sudo -u "$DEST_USER" dconf write /org/cinnamon/panels-height "['1:36']"
 
-    # --- Tamaños de iconos por zona ---
     sudo -u "$DEST_USER" dconf write /org/cinnamon/panel-zone-icon-sizes \
         "'[{\"panelId\": 1, \"left\": 48, \"center\": 24, \"right\": 24}]'"
-
     sudo -u "$DEST_USER" dconf write /org/cinnamon/panel-zone-symbolic-icon-sizes \
         "'[{\"panelId\": 1, \"left\": 16, \"center\": 16, \"right\": 15}]'"
-
     sudo -u "$DEST_USER" dconf write /org/cinnamon/panel-zone-text-sizes \
         "'[{\"panelId\": 1, \"left\": 9.0, \"center\": 6.5, \"right\": 9.0}]'"
-
     sudo -u "$DEST_USER" dconf write /org/cinnamon/panel-edit-mode "false"
 
-    # --- Desklets activos y sus posiciones ---
-    # Nota: posiciones ajustadas para resolución 1920x1080
+    # Desklets (posiciones para 1920x1080)
     sudo -u "$DEST_USER" dconf write /org/cinnamon/enabled-desklets \
         "['system-monitor-graph@rcassani:1:1660:930', \
 'timelet@linuxedo.com:8:1415:40', \
 'system-monitor-graph@rcassani:15:1660:790', \
 'system-monitor-graph@rcassani:16:1660:860', \
 'commandResult@ZimiZones:17:115:950']"
-
     sudo -u "$DEST_USER" dconf write /org/cinnamon/lock-desklets "false"
 
-    # --- Gestos trackpad ---
+    # Gestos trackpad
     sudo -u "$DEST_USER" dconf write /org/cinnamon/gestures/swipe-down-2 "'PUSH_TILE_DOWN::end'"
     sudo -u "$DEST_USER" dconf write /org/cinnamon/gestures/swipe-down-3 "'TOGGLE_OVERVIEW::end'"
     sudo -u "$DEST_USER" dconf write /org/cinnamon/gestures/swipe-down-4 "'VOLUME_DOWN::end'"
@@ -153,23 +155,97 @@ aplicar_panel_usuario() {
     sudo -u "$DEST_USER" dconf write /org/cinnamon/gestures/swipe-up-4 "'VOLUME_UP::end'"
     sudo -u "$DEST_USER" dconf write /org/cinnamon/gestures/tap-3 "'MEDIA_PLAY_PAUSE::end'"
 
-    # --- Sonidos del sistema desactivados ---
     sudo -u "$DEST_USER" dconf write /org/cinnamon/desktop/sound/event-sounds "false"
-
-    # --- Teclado latinoamericano ---
     sudo -u "$DEST_USER" dconf write \
         /org/cinnamon/desktop/input-sources/sources "[('xkb', 'latam')]"
 
-    echo "  [OK] Panel configurado para: $DEST_USER"
+    echo "  [OK] dconf del panel aplicado a: $DEST_USER"
 }
 
-aplicar_panel_usuario "$USUARIO"
+# --- Función: aplica JSON de configuración de applets ---
+aplicar_json_applets() {
+    local DEST_HOME="$1"
+    local SPICES_DIR="$DEST_HOME/.config/cinnamon/spices"
+
+    # Menú: logo personalizado, tamaño 25px
+    mkdir -p "$SPICES_DIR/menu@cinnamon.org"
+    cat > "$SPICES_DIR/menu@cinnamon.org/0.json" << JSONEOF
+{
+    "menu-custom": { "type": "switch", "value": true },
+    "menu-icon": { "type": "iconfilechooser", "value": "$MENU_ICON_DST" },
+    "menu-icon-size": { "type": "spinbutton", "value": 25.0 },
+    "menu-label": { "type": "entry", "value": "" },
+    "overlay-key": { "type": "keybinding", "value": "Super_L::Super_R" },
+    "activate-on-hover": { "type": "switch", "value": false },
+    "enable-animation": { "type": "switch", "value": false },
+    "category-hover": { "type": "switch", "value": true },
+    "enable-autoscroll": { "type": "switch", "value": true },
+    "search-position": { "type": "combobox", "value": "top" },
+    "system-position": { "type": "combobox", "value": "sidebar" },
+    "show-sidebar": { "type": "switch", "value": true },
+    "show-avatar": { "type": "switch", "value": true },
+    "show-favorites": { "type": "switch", "value": true },
+    "show-recents": { "type": "switch", "value": true },
+    "show-desktop": { "type": "switch", "value": true },
+    "show-downloads": { "type": "switch", "value": true },
+    "show-bookmarks": { "type": "switch", "value": true },
+    "show-home": { "type": "switch", "value": false },
+    "show-documents": { "type": "switch", "value": false },
+    "show-music": { "type": "switch", "value": false },
+    "show-pictures": { "type": "switch", "value": false },
+    "show-videos": { "type": "switch", "value": false },
+    "symbolic-category-icons": { "type": "switch", "value": true },
+    "show-description": { "type": "switch", "value": true },
+    "force-show-panel": { "type": "switch", "value": true },
+    "application-icon-size": { "type": "spinbutton", "value": 32 },
+    "category-icon-size": { "type": "spinbutton", "value": 16 },
+    "sidebar-icon-size": { "type": "spinbutton", "value": 24 },
+    "sidebar-max-width": { "type": "spinbutton", "value": 180 }
+}
+JSONEOF
+
+    # Workspace switcher: simple buttons
+    mkdir -p "$SPICES_DIR/workspace-switcher@cinnamon.org"
+    cat > "$SPICES_DIR/workspace-switcher@cinnamon.org/20.json" << JSONEOF
+{
+    "display-type": { "type": "combobox", "value": "buttons" },
+    "scroll-behavior": { "type": "combobox", "value": "reversed" }
+}
+JSONEOF
+
+    # IP Indicator: mostrar solo IP
+    mkdir -p "$SPICES_DIR/ipindicator@matus.benko@gmail.com"
+    cat > "$SPICES_DIR/ipindicator@matus.benko@gmail.com/ipindicator@matus.benko@gmail.com.json" << JSONEOF
+{
+    "appearance": { "type": "radiogroup", "value": "ip" },
+    "update_interval_ifconfig": { "type": "spinbutton", "value": 5 },
+    "update_interval_service": { "type": "spinbutton", "value": 3.0 },
+    "debug_level": { "type": "spinbutton", "value": 0.0 }
+}
+JSONEOF
+
+    echo "  [OK] JSON de applets configurado en: $DEST_HOME"
+}
+
+aplicar_dconf_panel "$USUARIO"
+aplicar_json_applets "$LAB_HOME"
+chown -R "${USUARIO}:${USUARIO}" "$LAB_HOME/.config/cinnamon"
+
+# Copiar JSONs a skel para usuarios futuros
+# Nota: el JSON del menú usa la ruta de /usr/share/pixmaps/ (global),
+# así que funciona igual para cualquier usuario
+SKEL_SPICES="$LAB_SKEL/.config/cinnamon/spices"
+mkdir -p "$SKEL_SPICES"
+cp -r "$LAB_HOME/.config/cinnamon/spices/menu@cinnamon.org" "$SKEL_SPICES/"
+cp -r "$LAB_HOME/.config/cinnamon/spices/workspace-switcher@cinnamon.org" "$SKEL_SPICES/"
+cp -r "$LAB_HOME/.config/cinnamon/spices/ipindicator@matus.benko@gmail.com" "$SKEL_SPICES/"
+echo "  [OK] JSONs de applets copiados a skel"
 
 # =============================================================
-# 4. AUTOSTART EN SKEL — usuarios futuros
+# 5. AUTOSTART EN SKEL — dconf para usuarios futuros
 # =============================================================
 echo ""
-echo "[4/4] Preparando herencia para usuarios futuros (skel)..."
+echo "[5/5] Preparando herencia dconf para usuarios futuros (skel)..."
 
 mkdir -p "$LAB_SKEL/.config/autostart"
 
@@ -203,9 +279,10 @@ echo "  [OK] Autostart creado en $LAB_SKEL/.config/autostart/aplicar-panel.deskt
 echo ""
 echo "============================================="
 echo " PASO 04 COMPLETADO - Panel configurado"
-echo " Izquierda : menu | network | workspace-switcher"
+echo " Logo menú : $MENU_ICON_DST"
+echo " Izquierda : menu | network | workspace-switcher (buttons)"
 echo " Centro    : grouped-window-list"
-echo " Derecha   : ipindicator | notifications"
+echo " Derecha   : ipindicator (IP) | notifications"
 echo "             removable-drives | keyboard"
 echo "             sound | power | calendar | cornerbar"
 echo " Desklets  : system-monitor-graph (x3)"
@@ -217,31 +294,5 @@ echo " [i] NOTAS:"
 echo "     1. Cierra sesión y vuelve a entrar para"
 echo "        ver los cambios aplicados."
 echo "     2. Las posiciones de los desklets asumen"
-echo "        resolución 1920x1080. Si la resolución"
-echo "        es distinta, reposiciónalos manualmente."
-echo "============================================="
-echo ""
-echo " ESTRUCTURA REQUERIDA EN EL REPO:"
-echo "   extras/"
-echo "     applets/"
-echo "       ipindicator@matus.benko@gmail.com/"
-echo "       sshlauncher@sumo/"
-echo "     desklets/"
-echo "       commandResult@ZimiZones/"
-echo "       cpuload@kimse/"
-echo "       simple-system-monitor@ariel/"
-echo "       sys-monitor@Paul163-ai/"
-echo "       system-monitor-graph@rcassani/"
-echo "       timelet@linuxedo.com/"
-echo "============================================="
-echo ""
-echo " COMANDOS PARA PREPARAR EL REPO (en polinux-turing):"
-echo "   cd /ruta/al/repo"
-echo "   mkdir -p extras/applets extras/desklets"
-echo "   cp -r ~/.local/share/cinnamon/applets/ipindicator@matus.benko@gmail.com extras/applets/"
-echo "   cp -r ~/.local/share/cinnamon/applets/sshlauncher@sumo extras/applets/"
-echo "   cp -r ~/.local/share/cinnamon/desklets/* extras/desklets/"
-echo "   git add extras/"
-echo "   git commit -m 'feat: applets y desklets para 04-panel'"
-echo "   git push"
+echo "        resolución 1920x1080."
 echo "============================================="
