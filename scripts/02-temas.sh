@@ -172,6 +172,10 @@ configurar_usuario "$USUARIO" "$LAB_HOME" "$WALLPAPER_PATH"
 # 3. Preparar herencia para usuarios futuros via skel
 configurar_skel "$WALLPAPER_PATH"
 
+# 4. Reinicia cinnamon
+sudo -u "$USUARIO" DISPLAY=:0 DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u $USUARIO)/bus" cinnamon --replace &
+
+
 echo ""
 echo "============================================="
 echo " PASO 02 COMPLETADO - Tema blue-dark aplicado"
