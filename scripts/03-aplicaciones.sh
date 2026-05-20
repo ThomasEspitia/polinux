@@ -41,6 +41,9 @@ echo ""
 echo "[1/6] Instalando herramientas de red..."
 
 # Responder 'yes' automáticamente al diálogo de Wireshark
+
+echo "iperf3 iperf3/start_daemon boolean false" | debconf-set-selections
+
 echo "wireshark-common wireshark-common/install-setuid boolean true" \
     | debconf-set-selections
 
