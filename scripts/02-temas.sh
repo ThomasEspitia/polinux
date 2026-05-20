@@ -172,9 +172,6 @@ configurar_usuario "$USUARIO" "$LAB_HOME" "$WALLPAPER_PATH"
 # 3. Preparar herencia para usuarios futuros via skel
 configurar_skel "$WALLPAPER_PATH"
 
-# 4. Reinicia cinnamon
-sudo -u "$USUARIO" DISPLAY=:0 cinnamon --replace &
-
 
 echo ""
 echo "============================================="
