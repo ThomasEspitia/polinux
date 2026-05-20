@@ -208,8 +208,14 @@ if [ -z "$PT_DEB" ]; then
     echo "         Descárgalo desde https://netacad.com y colócalo en paquetes/"
 else
     echo "  Instalando: $(basename $PT_DEB)"
-    apt install -y libpcre2-dev
-    echo "2" | dpkg -i "$PT_DEB"
+    apt install -y expect libpcre2-dev
+
+    expect -c "
+    spawn dpkg -i $PT_DEB
+    expect \"enter 1, 2 or 3\"
+    send \"2\r\"
+    expect eof
+    "
     echo "[OK] Packet Tracer instalado"
 fi
 
