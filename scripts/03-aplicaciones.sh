@@ -40,13 +40,12 @@ echo "============================================="
 echo ""
 echo "[1/6] Instalando herramientas de red..."
 
-# Responder 'yes' automáticamente al diálogo de Wireshark
-
-echo "ubridge ubridge/install-setuid boolean true" | debconf-set-selections
-
-echo "iperf3 iperf3/start_daemon boolean false" | debconf-set-selections
-
+# Responder automáticamente a diálogos interactivos
 echo "wireshark-common wireshark-common/install-setuid boolean true" \
+    | debconf-set-selections
+echo "iperf3 iperf3/start_daemon boolean false" \
+    | debconf-set-selections
+echo "ubridge ubridge/install-setuid boolean true" \
     | debconf-set-selections
 
 apt install -y \
@@ -72,7 +71,8 @@ apt install -y \
     unzip \
     zip \
     python3 \
-    python3-pip
+    python3-pip \
+    expect
 
 # Agregar redsi al grupo wireshark para captura sin root
 usermod -aG wireshark "$USUARIO"
@@ -84,7 +84,6 @@ echo "[OK] Herramientas de red instaladas"
 echo ""
 echo "[2/6] Instalando GNS3..."
 
-# Agregar repositorio oficial de GNS3
 add-apt-repository -y ppa:gns3/ppa
 apt update
 apt install -y gns3-gui gns3-server
@@ -113,11 +112,13 @@ IOU_SRC="$PAQUETES_DIR/gns3"
 mkdir -p "$GNS3_IMAGES_DIR"
 mkdir -p "$GNS3_SKEL_DIR"
 
-# Copiar imágenes IOU
+# Copiar imágenes IOU y darles permisos de ejecución
 if [ -d "$IOU_SRC" ]; then
     cp "$IOU_SRC/"*.iol "$GNS3_IMAGES_DIR/" 2>/dev/null || true
     cp "$IOU_SRC/"*.iol "$GNS3_SKEL_DIR/" 2>/dev/null || true
-    echo "  [OK] Imágenes IOU copiadas"
+    chmod +x "$GNS3_IMAGES_DIR/"*.iol
+    chmod +x "$GNS3_SKEL_DIR/"*.iol
+    echo "  [OK] Imágenes IOU copiadas y con permisos de ejecución"
 else
     echo "  [WARN] No se encontró $IOU_SRC, omitiendo imágenes IOU"
 fi
@@ -125,7 +126,7 @@ fi
 # Generar licencia IOU dinámicamente según el hostname de la máquina
 echo "  Generando licencia IOU para hostname: $(hostname)..."
 
-python3 << 'PYEOF'
+LAB_HOME="$LAB_HOME" python3 << 'PYEOF'
 import os
 import socket
 import hashlib
@@ -144,49 +145,36 @@ iouLicense = hashlib.md5(md5input).hexdigest()[:16]
 
 iourc_content = f"[license]\n{hostname} = {iouLicense};\n"
 
-# Escribir en home de redsi
 home = os.environ.get('LAB_HOME', '/home/redsi')
+
+# Escribir ~/.iourc
 with open(f"{home}/.iourc", "w") as f:
     f.write(iourc_content)
 
-# Escribir en skel para usuarios futuros
-# Nota: el hostname cambia por máquina, así que en skel
-# dejamos un script que lo regenera en el primer login
-skel_script = f"""#!/bin/bash
-# Genera la licencia IOU según el hostname de esta máquina
-python3 -c "
-import os, socket, hashlib, struct
-hostid = os.popen('hostid').read().strip()
-hostname = socket.gethostname()
-ioukey = int(hostid, 16)
-for x in hostname: ioukey += ord(x)
-pad1 = b'\\x4B\\x58\\x21\\x81\\x56\\x7B\\x0D\\xF3\\x21\\x43\\x9B\\x7E\\xAC\\x1D\\xE6\\x8A'
-pad2 = b'\\x80' + 39*b'\\x00'
-lic = hashlib.md5(pad1 + pad2 + struct.pack('!i', ioukey) + pad1).hexdigest()[:16]
-open(os.path.expanduser('~/.iourc'), 'w').write(f'[license]\\n{{hostname}} = {{lic}};\\n')
-print('Licencia IOU generada para:', hostname)
-"
-# Autoeliminarse después de ejecutarse
-rm -f ~/.config/autostart/gns3-iou-license.desktop
-"""
+# Escribir en el directorio de imágenes de GNS3 (donde GNS3 la busca)
+gns3_iourc = f"{home}/GNS3/images/iourc"
+with open(gns3_iourc, "w") as f:
+    f.write(iourc_content)
 
+# Escribir en skel para usuarios futuros (se regenera en primer login)
 skel_autostart = "/etc/skel/.config/autostart"
 os.makedirs(skel_autostart, exist_ok=True)
 with open(f"{skel_autostart}/gns3-iou-license.desktop", "w") as f:
-    f.write(f"""[Desktop Entry]
+    f.write("""[Desktop Entry]
 Type=Application
 Name=Generar licencia IOU GNS3
-Exec=bash -c '{skel_script.replace(chr(10), "; ").replace("'", "'\\''")}' 
+Exec=bash -c 'python3 -c "import os,socket,hashlib,struct; hostid=os.popen(chr(104)+chr(111)+chr(115)+chr(116)+chr(105)+chr(100)).read().strip(); hostname=socket.gethostname(); ioukey=int(hostid,16); [ioukey:=ioukey+ord(x) for x in hostname]; pad1=b\\x27\\x4B\\x58\\x21\\x81\\x56\\x7B\\x0D\\xF3\\x21\\x43\\x9B\\x7E\\xAC\\x1D\\xE6\\x8A\\x27; pad2=b\\x27\\x80\\x27+39*b\\x27\\x00\\x27; lic=hashlib.md5(pad1+pad2+struct.pack(chr(33)+chr(105),ioukey)+pad1).hexdigest()[:16]; open(os.path.expanduser(chr(126)+chr(47)+chr(46)+chr(105)+chr(111)+chr(117)+chr(114)+chr(99)),chr(119)).write(chr(91)+chr(108)+chr(105)+chr(99)+chr(101)+chr(110)+chr(115)+chr(101)+chr(93)+chr(10)+hostname+chr(32)+chr(61)+chr(32)+lic+chr(59)+chr(10))" && rm -f ~/.config/autostart/gns3-iou-license.desktop'
 Hidden=false
 NoDisplay=true
 X-GNOME-Autostart-enabled=true
 """)
 
-print(f"Licencia IOU generada: {hostname} = {iouLicense}")
-print(f"Guardada en: {home}/.iourc")
+print(f"  Licencia IOU: {hostname} = {iouLicense}")
+print(f"  Guardada en : {home}/.iourc")
+print(f"  Guardada en : {gns3_iourc}")
 PYEOF
 
-# Añadir entrada en /etc/hosts para deshabilitar phone-home de IOU
+# Deshabilitar phone-home de IOU
 if ! grep -q "xml.cisco.com" /etc/hosts; then
     echo "127.0.0.127 xml.cisco.com" >> /etc/hosts
     echo "  [OK] Phone-home de IOU deshabilitado"
@@ -194,22 +182,62 @@ fi
 
 # Corregir permisos
 chown -R "${USUARIO}:${USUARIO}" "$LAB_HOME/GNS3"
-echo "[OK] Licencia IOU generada y configurada"
+echo "[OK] Imágenes IOU y licencia configuradas"
+
+# =============================================================
+# 3.5 REGISTRAR TEMPLATES IOU EN GNS3 VIA API
+# =============================================================
+echo ""
+echo "  Registrando templates IOU en GNS3..."
+
+# Arrancar gns3server como el usuario redsi
+sudo -u "$USUARIO" gns3server --daemon --log /tmp/gns3server.log --pid /tmp/gns3server.pid
+sleep 5
+
+GNS3_API="http://localhost:3080/v2"
+
+# Registrar imagen L3 (Router)
+curl -s -X POST "$GNS3_API/templates" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "name": "IOU-L3",
+        "template_type": "iou",
+        "path": "x86_64_crb_linux-adventerprisek9-ms.iol",
+        "compute_id": "local",
+        "category": "router",
+        "symbol": ":/symbols/router.svg"
+    }' > /dev/null
+
+# Registrar imagen L2 (Switch)
+curl -s -X POST "$GNS3_API/templates" \
+    -H "Content-Type: application/json" \
+    -d '{
+        "name": "IOU-L2",
+        "template_type": "iou",
+        "path": "x86_64_crb_linux_l2-adventerprisek9-ms.iol",
+        "compute_id": "local",
+        "category": "switch",
+        "symbol": ":/symbols/ethernet_switch.svg"
+    }' > /dev/null
+
+# Apagar el servidor
+kill $(cat /tmp/gns3server.pid 2>/dev/null) 2>/dev/null || pkill -f gns3server || true
+echo "  [OK] Templates IOU registrados en GNS3"
 
 # =============================================================
 # 4. PACKET TRACER
 # =============================================================
-
 echo ""
 echo "[4/6] Instalando Cisco Packet Tracer..."
+
 PT_DEB=$(find "$PAQUETES_DIR" -maxdepth 1 -name "CiscoPacketTracer*.deb" | head -1)
+
 if [ -z "$PT_DEB" ]; then
     echo "  [WARN] No se encontró el .deb de Packet Tracer en $PAQUETES_DIR"
     echo "         Descárgalo desde https://netacad.com y colócalo en paquetes/"
 else
     echo "  Instalando: $(basename $PT_DEB)"
-    apt install -y expect libpcre2-dev
-
+    apt install -y libpcre2-dev
     expect -c "
     spawn dpkg -i $PT_DEB
     expect \"Press q to quit\"
@@ -222,61 +250,22 @@ else
 fi
 
 # =============================================================
-# REGISTRAR IMÁGENES IOU EN GNS3 VIA API
-# =============================================================
-echo ""
-echo "  Registrando imágenes IOU en GNS3..."
-
-# Arrancar gns3server en background como el usuario redsi
-sudo -u "$USUARIO" gns3server --daemon --log /tmp/gns3server.log
-sleep 5  # esperar a que levante
-
-GNS3_API="http://localhost:3080/v2"
-
-# Registrar imagen L3 (Router)
-curl -s -X POST "$GNS3_API/iou/templates" \
-    -H "Content-Type: application/json" \
-    -d "{
-        \"name\": \"IOU-L3\",
-        \"template_type\": \"iou\",
-        \"path\": \"$GNS3_IMAGES_DIR/x86_64_crb_linux-adventerprisek9-ms.iol\",
-        \"use_default_iou_values\": true,
-        \"l1_keepalives\": false
-    }"
-
-# Registrar imagen L2 (Switch)
-curl -s -X POST "$GNS3_API/iou/templates" \
-    -H "Content-Type: application/json" \
-    -d "{
-        \"name\": \"IOU-L2\",
-        \"template_type\": \"iou\",
-        \"path\": \"$GNS3_IMAGES_DIR/x86_64_crb_linux_l2-adventerprisek9-ms.iol\",
-        \"use_default_iou_values\": true,
-        \"l1_keepalives\": false
-    }"
-
-# Apagar el servidor
-sudo -u "$USUARIO" gns3server --stop
-echo "  [OK] Imágenes IOU registradas en GNS3"
-
-# =============================================================
 # 5. KITTY (emulador de terminal)
 # =============================================================
 echo ""
 echo "[5/6] Instalando Kitty..."
 
-# Instalar via instalador oficial (más actualizado que apt)
 sudo -u "$USUARIO" bash -c 'curl -L https://sw.kovidgoyal.net/kitty/installer.sh | sh /dev/stdin launch=n'
 
-# Crear enlaces simbólicos
+# Crear enlaces simbólicos globales
 ln -sf "$LAB_HOME/.local/kitty.app/bin/kitty" /usr/local/bin/kitty
 ln -sf "$LAB_HOME/.local/kitty.app/bin/kitten" /usr/local/bin/kitten
 
-# Crear entrada en el menú de aplicaciones
+# Entrada en el menú de aplicaciones
 cp "$LAB_HOME/.local/kitty.app/share/applications/kitty.desktop" \
     /usr/share/applications/ 2>/dev/null || true
 
-# Copiar a skel para que usuarios futuros también lo tengan en el menú
+# Copiar a skel para usuarios futuros
 mkdir -p "$LAB_SKEL/.local"
 cp -r "$LAB_HOME/.local/kitty.app" "$LAB_SKEL/.local/" 2>/dev/null || true
 
@@ -293,10 +282,14 @@ apt autoclean
 echo ""
 echo "============================================="
 echo " PASO 03 COMPLETADO - Aplicaciones instaladas"
-echo " Wireshark    : $(wireshark --version 2>/dev/null | head -1 || echo 'instalado')"
-echo " Nmap         : $(nmap --version 2>/dev/null | head -1 || echo 'instalado')"
-echo " GNS3         : $(gns3 --version 2>/dev/null || echo 'instalado')"
-echo " Kitty        : $(kitty --version 2>/dev/null || echo 'instalado')"
-echo " PuTTY        : $(putty --version 2>/dev/null | head -1 || echo 'instalado')"
-echo " Licencia IOU : ~/.iourc generada para $(hostname)"
+echo " Wireshark : $(wireshark --version 2>/dev/null | head -1 || echo 'instalado')"
+echo " Nmap      : $(nmap --version 2>/dev/null | head -1 || echo 'instalado')"
+echo " GNS3      : $(gns3server --version 2>/dev/null || echo 'instalado')"
+echo " Kitty     : $(kitty --version 2>/dev/null || echo 'instalado')"
+echo " PT        : $(packettracer --version 2>/dev/null | head -1 || echo 'instalado')"
+echo " IOU       : $(hostname) = $(grep -o '[a-f0-9]*;' $LAB_HOME/.iourc 2>/dev/null || echo 'generada')"
+echo "============================================="
+echo ""
+echo " [i] IMPORTANTE: Cerrar sesión y volver a entrar"
+echo "     para que los permisos de ubridge se apliquen en GNS3"
 echo "============================================="
