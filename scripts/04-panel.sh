@@ -224,6 +224,38 @@ JSONEOF
 }
 JSONEOF
 
+    # Grouped window list: pinned apps = Chrome y Kitty (sin Firefox)
+    mkdir -p "$SPICES_DIR/grouped-window-list@cinnamon.org"
+    cat > "$SPICES_DIR/grouped-window-list@cinnamon.org/17.json" << JSONEOF
+{
+    "group-apps": { "type": "checkbox", "value": true },
+    "scroll-behavior": { "type": "combobox", "value": 1 },
+    "left-click-action": { "type": "combobox", "value": 2 },
+    "middle-click-action": { "type": "combobox", "value": 3 },
+    "show-all-workspaces": { "type": "checkbox", "value": false },
+    "window-display-settings": { "type": "combobox", "value": 1 },
+    "title-display": { "type": "combobox", "value": 1 },
+    "launcher-animation-effect": { "type": "combobox", "value": 3 },
+    "enable-window-count-badges": { "type": "checkbox", "value": true },
+    "enable-notification-badges": { "type": "checkbox", "value": true },
+    "enable-app-button-dragging": { "type": "checkbox", "value": true },
+    "show-thumbnails": { "type": "checkbox", "value": true },
+    "animate-thumbnails": { "type": "checkbox", "value": false },
+    "thumbnail-size": { "type": "combobox", "value": 6 },
+    "thumbnail-timeout": { "type": "combobox", "value": 250 },
+    "enable-hover-peek": { "type": "checkbox", "value": true },
+    "hover-peek-opacity": { "type": "spinbutton", "value": 100 },
+    "show-recent": { "type": "checkbox", "value": true },
+    "autostart-menu-item": { "type": "checkbox", "value": false },
+    "super-num-hotkeys": { "type": "checkbox", "value": true },
+    "pinned-apps": {
+        "type": "generic",
+        "default": ["nemo.desktop", "google-chrome.desktop", "kitty.desktop"],
+        "value": ["nemo.desktop", "google-chrome.desktop", "kitty.desktop"]
+    }
+}
+JSONEOF
+
     echo "  [OK] JSON de applets configurado en: $DEST_HOME"
 }
 
@@ -239,6 +271,7 @@ mkdir -p "$SKEL_SPICES"
 cp -r "$LAB_HOME/.config/cinnamon/spices/menu@cinnamon.org" "$SKEL_SPICES/"
 cp -r "$LAB_HOME/.config/cinnamon/spices/workspace-switcher@cinnamon.org" "$SKEL_SPICES/"
 cp -r "$LAB_HOME/.config/cinnamon/spices/ipindicator@matus.benko@gmail.com" "$SKEL_SPICES/"
+cp -r "$LAB_HOME/.config/cinnamon/spices/grouped-window-list@cinnamon.org" "$SKEL_SPICES/"
 echo "  [OK] JSONs de applets copiados a skel"
 
 # =============================================================
