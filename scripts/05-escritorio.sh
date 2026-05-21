@@ -73,19 +73,71 @@ echo "[2/5] Configurando iconos del escritorio..."
 
 configurar_nemo() {
     local DEST_USER="$1"
+    local DEST_HOME="$2"
 
+    # Visibilidad de íconos del sistema
     sudo -u "$DEST_USER" dconf write /org/nemo/desktop/home-icon-visible    "true"
     sudo -u "$DEST_USER" dconf write /org/nemo/desktop/network-icon-visible  "true"
     sudo -u "$DEST_USER" dconf write /org/nemo/desktop/trash-icon-visible    "true"
     sudo -u "$DEST_USER" dconf write /org/nemo/desktop/computer-icon-visible "false"
     sudo -u "$DEST_USER" dconf write /org/nemo/desktop/volumes-visible       "false"
     sudo -u "$DEST_USER" dconf write /org/nemo/desktop/show-orphaned-desktop-icons "true"
-    sudo -u "$DEST_USER" dconf write /org/nemo/desktop/desktop-layout        "'true::false'"
 
+    # desktop-metadata: posiciones fijas, grid spacing y auto-arrange desactivado
+    # Exportado desde polinux-turing (1920x1080)
+    # grid-adjust=81;100; → íconos pegados al borde izquierdo
+    mkdir -p "$DEST_HOME/.config/nemo"
+    cat > "$DEST_HOME/.config/nemo/desktop-metadata" << 'METADATA'
+[desktop-monitor-0]
+nemo-icon-view-keep-aligned=true
+nemo-icon-view-auto-layout=false
+nemo-icon-view-layout-timestamp=1779363660
+nemo-icon-view-zoom-level=3
+desktop-grid-adjust=81;100;
+nemo-icon-view-sort-reversed=false
+desktop-horizontal=false
+[home]
+nemo-icon-position=43,30
+monitor=0
+icon-scale=1
+nemo-icon-position-timestamp=1779363660
+[network]
+nemo-icon-position=43,130
+monitor=0
+icon-scale=1
+nemo-icon-position-timestamp=1779363660
+[trash]
+nemo-icon-position=43,530
+monitor=0
+icon-scale=1
+nemo-icon-position-timestamp=1779363660
+[google-chrome]
+nemo-icon-position=43,230
+monitor=0
+icon-scale=1
+nemo-icon-position-timestamp=1779363660
+[kitty]
+nemo-icon-position=43,330
+monitor=0
+icon-scale=1
+nemo-icon-position-timestamp=1779363660
+[wireshark]
+nemo-icon-position=43,430
+monitor=0
+icon-scale=1
+nemo-icon-position-timestamp=1779363660
+[cinnamon-network-panel]
+nemo-icon-position=43,630
+monitor=0
+icon-scale=1
+nemo-icon-position-timestamp=1779363660
+METADATA
+
+    chown "${DEST_USER}:${DEST_USER}" "$DEST_HOME/.config/nemo/desktop-metadata"
     echo "  [OK] Iconos del escritorio configurados para: $DEST_USER"
 }
 
-configurar_nemo "$USUARIO"
+configurar_nemo "$USUARIO" "$LAB_HOME"
 
 # =============================================================
 # 3. ACCESOS DIRECTOS EN EL ESCRITORIO
@@ -182,6 +234,10 @@ configurar_json_desklets() {
     # fase lunar, sin caption, escala 1
     # ---------------------------------------------------------
     mkdir -p "$SPICES_DIR/moonlight-clock@torchipeppo"
+    # Cinnamon lee el schema (moonlight-clock@torchipeppo.json) para los valores,
+    # no el archivo por ID. Hay que copiar el schema del desklet y sobreescribir
+    # los valores personalizados directamente en él.
+    cp -f "$MOONLIGHT_SYSTEM/settings-schema.json"         "$SPICES_DIR/moonlight-clock@torchipeppo/moonlight-clock@torchipeppo.json" 2>/dev/null || true
     cat > "$SPICES_DIR/moonlight-clock@torchipeppo/1.json" << 'JSONEOF'
 {
     "global-h-offset": { "type": "spinbutton", "default": 0, "value": 0 },
@@ -222,6 +278,8 @@ configurar_json_desklets() {
     "first-time": { "type": "generic", "default": true, "value": false }
 }
 JSONEOF
+    # Cinnamon carga la config desde el archivo con nombre del UUID
+    cp "$SPICES_DIR/moonlight-clock@torchipeppo/1.json"        "$SPICES_DIR/moonlight-clock@torchipeppo/moonlight-clock@torchipeppo.json"
 
     # ---------------------------------------------------------
     # system-monitor-graph id:2 → CPU
@@ -361,6 +419,11 @@ aplicar_dconf_escritorio "$USUARIO"
 
 # Autostart en skel para usuarios futuros
 mkdir -p "$LAB_SKEL/.config/autostart"
+
+# Copiar desktop-metadata a skel para herencia de posiciones e íconos
+mkdir -p "$LAB_SKEL/.config/nemo"
+cp "$LAB_HOME/.config/nemo/desktop-metadata" "$LAB_SKEL/.config/nemo/desktop-metadata"
+echo "  [OK] desktop-metadata copiado a skel"
 
 cat > "$LAB_SKEL/.config/autostart/aplicar-escritorio-nemo.desktop" << 'DESKTOP'
 [Desktop Entry]
