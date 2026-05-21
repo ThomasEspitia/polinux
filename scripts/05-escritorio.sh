@@ -6,11 +6,9 @@
 # 05-escritorio.sh — Iconos del escritorio y desklets
 #
 # Qué hace:
-#   - Instala moonlight-clock desde extras/desklets/
 #   - Configura iconos visibles en el escritorio (Home, Network, Trash)
 #   - Crea accesos directos de Wireshark, Chrome y kitty en ~/Desktop
 #   - Aplica configuración de desklets con sus JSONs exactos:
-#       · moonlight-clock         (id:1)  → Reloj arriba derecha
 #       · system-monitor-graph    (id:2)  → CPU
 #       · system-monitor-graph    (id:3)  → Network
 #       · system-monitor-graph    (id:4)  → RAM
@@ -42,28 +40,11 @@ echo " PASO 05: Configurando escritorio..."
 echo "============================================="
 
 # =============================================================
-# 1. INSTALAR MOONLIGHT-CLOCK
+# 1. (reservado para futuros desklets de sistema)
 # =============================================================
 echo ""
-echo "[1/5] Instalando moonlight-clock..."
-
-MOONLIGHT_SRC="$DESKLETS_SRC/moonlight-clock@torchipeppo"
-MOONLIGHT_SYSTEM="/usr/share/cinnamon/desklets/moonlight-clock@torchipeppo"
-MOONLIGHT_SKEL="$LAB_SKEL/.local/share/cinnamon/desklets/moonlight-clock@torchipeppo"
-
-if [ ! -d "$MOONLIGHT_SRC" ]; then
-    echo "  [WARN] No se encontró $MOONLIGHT_SRC"
-    echo "         Agrega el desklet al repo en extras/desklets/"
-else
-    # Instalar en sistema para que todos los usuarios lo vean
-    cp -r "$MOONLIGHT_SRC" "$MOONLIGHT_SYSTEM"
-    echo "  [OK] moonlight-clock instalado en sistema"
-
-    # Skel para usuarios futuros
-    mkdir -p "$LAB_SKEL/.local/share/cinnamon/desklets"
-    cp -r "$MOONLIGHT_SRC" "$MOONLIGHT_SKEL"
-    echo "  [OK] moonlight-clock copiado a skel"
-fi
+echo "[1/5] Verificando desklets del sistema..."
+echo "  [OK] Sin desklets adicionales que instalar"
 
 # =============================================================
 # 2. ICONOS DEL ESCRITORIO (Nemo desktop)
@@ -107,27 +88,27 @@ monitor=0
 icon-scale=1
 nemo-icon-position-timestamp=1779363660
 [trash]
-nemo-icon-position=43,530
-monitor=0
-icon-scale=1
-nemo-icon-position-timestamp=1779363660
-[google-chrome]
 nemo-icon-position=43,230
 monitor=0
 icon-scale=1
 nemo-icon-position-timestamp=1779363660
-[kitty]
+[google-chrome]
 nemo-icon-position=43,330
 monitor=0
 icon-scale=1
 nemo-icon-position-timestamp=1779363660
-[wireshark]
+[kitty]
 nemo-icon-position=43,430
 monitor=0
 icon-scale=1
 nemo-icon-position-timestamp=1779363660
+[wireshark]
+nemo-icon-position=43,530
+monitor=0
+icon-scale=1
+nemo-icon-position-timestamp=1779363660
 [cinnamon-network-panel]
-nemo-icon-position=43,630
+nemo-icon-position=43,680
 monitor=0
 icon-scale=1
 nemo-icon-position-timestamp=1779363660
@@ -229,59 +210,6 @@ configurar_json_desklets() {
     local SPICES_DIR="$DEST_HOME/.config/cinnamon/spices"
 
     # ---------------------------------------------------------
-    # moonlight-clock id:1 → Reloj arriba derecha
-    # Configuración: fondo transparente, color azul claro,
-    # fase lunar, sin caption, escala 1
-    # ---------------------------------------------------------
-    mkdir -p "$SPICES_DIR/moonlight-clock@torchipeppo"
-    # Cinnamon lee el schema (moonlight-clock@torchipeppo.json) para los valores,
-    # no el archivo por ID. Hay que copiar el schema del desklet y sobreescribir
-    # los valores personalizados directamente en él.
-    cp -f "$MOONLIGHT_SYSTEM/settings-schema.json"         "$SPICES_DIR/moonlight-clock@torchipeppo/moonlight-clock@torchipeppo.json" 2>/dev/null || true
-    cat > "$SPICES_DIR/moonlight-clock@torchipeppo/1.json" << 'JSONEOF'
-{
-    "global-h-offset": { "type": "spinbutton", "default": 0, "value": 0 },
-    "global-v-offset": { "type": "spinbutton", "default": 0, "value": 0 },
-    "global-scale": { "type": "spinbutton", "default": 1, "value": 1 },
-    "global-color-scheme": { "type": "combobox", "default": "blue", "value": "the-custom" },
-    "global-custom-corner1": { "type": "colorchooser", "default": "#67baff", "value": "rgba(191,64,64,0)" },
-    "global-custom-corner2": { "type": "colorchooser", "default": "black", "value": "rgba(191,64,64,0)" },
-    "global-custom-time": { "type": "colorchooser", "default": "white", "value": "white" },
-    "global-custom-shadow": { "type": "colorchooser", "default": "#447fab", "value": "rgb(15,37,74)" },
-    "global-custom-date": { "type": "colorchooser", "default": "#226182", "value": "rgb(153,193,241)" },
-    "global-custom-bottom": { "type": "colorchooser", "default": "aliceblue", "value": "rgb(240,248,255)" },
-    "global-custom-highlight": { "type": "colorchooser", "default": "#7bffff", "value": "#7bffff" },
-    "global-color-invert-bottom": { "type": "switch", "default": false, "value": false },
-    "global-color-use-highlight": { "type": "switch", "default": true, "value": true },
-    "top-format": { "type": "entry", "default": "", "value": "" },
-    "top-font": { "type": "fontchooser", "default": "Bold 52", "value": "Bold 52" },
-    "top-v-offset": { "type": "spinbutton", "default": 0, "value": 0 },
-    "top-weekday": { "type": "switch", "default": true, "value": true },
-    "middle-format": { "type": "entry", "default": "", "value": "" },
-    "middle-font": { "type": "fontchooser", "default": "Normal 70", "value": "Normal 70" },
-    "middle-v-offset": { "type": "spinbutton", "default": 0, "value": 0 },
-    "middle-shadow": { "type": "switch", "default": true, "value": true },
-    "middle-shadow-offset": { "type": "spinbutton", "default": 8, "value": 8 },
-    "wapi-enable": { "type": "switch", "default": true, "value": false },
-    "wapi-key": { "type": "entry", "default": "", "value": "" },
-    "wapi-query": { "type": "entry", "default": "auto:ip", "value": "auto:ip" },
-    "wapi-update-period-minutes": { "type": "combobox", "default": 60, "value": 60 },
-    "bottom-emoji-type": { "type": "combobox", "default": "moon", "value": "moon" },
-    "bottom-emoji-size": { "type": "spinbutton", "default": 70, "value": 60 },
-    "bottom-caption-type": { "type": "combobox", "default": "cntdn-cstm", "value": "" },
-    "bottom-caption-font": { "type": "fontchooser", "default": "Bold 50", "value": "Bold 50" },
-    "bottom-caption-v-offset": { "type": "spinbutton", "default": 0, "value": 0 },
-    "bottom-caption-shadow": { "type": "switch", "default": false, "value": false },
-    "bottom-caption-shadow-offset": { "type": "spinbutton", "default": 4, "value": 4 },
-    "bottom-show-secondary-countdowns": { "type": "switch", "default": true, "value": true },
-    "custom-countdown-list": { "type": "generic", "default": [], "value": [] },
-    "first-time": { "type": "generic", "default": true, "value": false }
-}
-JSONEOF
-    # Cinnamon carga la config desde el archivo con nombre del UUID
-    cp "$SPICES_DIR/moonlight-clock@torchipeppo/1.json"        "$SPICES_DIR/moonlight-clock@torchipeppo/moonlight-clock@torchipeppo.json"
-
-    # ---------------------------------------------------------
     # system-monitor-graph id:2 → CPU
     # ---------------------------------------------------------
     mkdir -p "$SPICES_DIR/system-monitor-graph@rcassani"
@@ -379,7 +307,6 @@ chown -R "${USUARIO}:${USUARIO}" "$LAB_HOME/.config/cinnamon/spices"
 # Copiar JSONs a skel
 SKEL_SPICES="$LAB_SKEL/.config/cinnamon/spices"
 mkdir -p "$SKEL_SPICES"
-cp -r "$LAB_HOME/.config/cinnamon/spices/moonlight-clock@torchipeppo" "$SKEL_SPICES/"
 cp -r "$LAB_HOME/.config/cinnamon/spices/system-monitor-graph@rcassani" "$SKEL_SPICES/"
 cp -r "$LAB_HOME/.config/cinnamon/spices/commandResult@ZimiZones"       "$SKEL_SPICES/"
 echo "  [OK] JSONs de desklets copiados a skel"
@@ -394,23 +321,21 @@ aplicar_dconf_escritorio() {
     local DEST_USER="$1"
 
     # Desklets con IDs frescos (1-5) y posiciones para 1920x1080
-    # id:1  moonlight-clock        → arriba derecha  1275:50
     # id:2  system-monitor-graph   → CPU             1660:790
     # id:3  system-monitor-graph   → Network         1660:860
     # id:4  system-monitor-graph   → RAM             1660:930
     # id:5  commandResult          → IP abajo izq    115:935
     sudo -u "$DEST_USER" dconf write /org/cinnamon/enabled-desklets \
-        "['moonlight-clock@torchipeppo:1:1275:50', \
-'system-monitor-graph@rcassani:2:1660:790', \
-'system-monitor-graph@rcassani:3:1660:860', \
-'system-monitor-graph@rcassani:4:1660:930', \
-'commandResult@ZimiZones:5:115:935']"
+        "['system-monitor-graph@rcassani:1:1660:790', \
+'system-monitor-graph@rcassani:2:1660:860', \
+'system-monitor-graph@rcassani:3:1660:930', \
+'commandResult@ZimiZones:4:115:935']"
 
     # Bloquear desklets — no se pueden mover ni modificar desde el escritorio
     sudo -u "$DEST_USER" dconf write /org/cinnamon/lock-desklets "true"
 
-    # Asegurarse de que next-desklet-id quede en 6 para no colisionar
-    sudo -u "$DEST_USER" dconf write /org/cinnamon/next-desklet-id "6"
+    # Asegurarse de que next-desklet-id quede en 5 para no colisionar
+    sudo -u "$DEST_USER" dconf write /org/cinnamon/next-desklet-id "5"
 
     echo "  [OK] dconf de desklets aplicado a: $DEST_USER"
 }
@@ -452,9 +377,9 @@ NoDisplay=true
 X-GNOME-Autostart-enabled=true
 Exec=bash -c '\
 dconf write /org/cinnamon/enabled-desklets \
-  "['"'"'moonlight-clock@torchipeppo:1:1275:50'"'"','"'"'system-monitor-graph@rcassani:2:1660:790'"'"','"'"'system-monitor-graph@rcassani:3:1660:860'"'"','"'"'system-monitor-graph@rcassani:4:1660:930'"'"','"'"'commandResult@ZimiZones:5:115:935'"'"']" && \
+  "['"'"'system-monitor-graph@rcassani:1:1660:790'"'"','"'"'system-monitor-graph@rcassani:2:1660:860'"'"','"'"'system-monitor-graph@rcassani:3:1660:930'"'"','"'"'commandResult@ZimiZones:4:115:935'"'"']" && \
 dconf write /org/cinnamon/lock-desklets "true" && \
-dconf write /org/cinnamon/next-desklet-id 6 && \
+dconf write /org/cinnamon/next-desklet-id 5 && \
 rm -f "$HOME/.config/autostart/aplicar-escritorio-desklets.desktop"'
 DESKTOP
 
@@ -473,14 +398,11 @@ echo "   Computer, Volumes      (ocultos)"
 echo "   Wireshark, Chrome, kitty, Network Config (accesos directos)"
 echo ""
 echo " Desklets (1920x1080, bloqueados):"
-echo "   moonlight-clock  :1 → 1275,50   (reloj)"
-echo "   CPU  graph       :2 → 1660,790"
-echo "   Net  graph       :3 → 1660,860"
-echo "   RAM  graph       :4 → 1660,930"
-echo "   IP commandResult :5 → 115,935"
+echo "   CPU  graph       :1 → 1660,790"
+echo "   Net  graph       :2 → 1660,860"
+echo "   RAM  graph       :3 → 1660,930"
+echo "   IP commandResult :4 → 115,935"
 echo ""
 echo " [i] IMPORTANTE:"
-echo "     1. Agrega extras/desklets/moonlight-clock@torchipeppo"
-echo "        al repo antes de correr en los otros equipos."
 echo "     2. Cierra sesión y vuelve a entrar para ver cambios."
 echo "============================================="
