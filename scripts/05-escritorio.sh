@@ -72,7 +72,7 @@ configurar_nemo() {
 [desktop-monitor-0]
 nemo-icon-view-keep-aligned=true
 nemo-icon-view-auto-layout=false
-nemo-icon-view-layout-timestamp=1779363660
+nemo-icon-view-layout-timestamp=1779364766
 nemo-icon-view-zoom-level=3
 desktop-grid-adjust=81;100;
 nemo-icon-view-sort-reversed=false
@@ -81,37 +81,37 @@ desktop-horizontal=false
 nemo-icon-position=43,30
 monitor=0
 icon-scale=1
-nemo-icon-position-timestamp=1779363660
+nemo-icon-position-timestamp=1779364766
 [network]
 nemo-icon-position=43,130
 monitor=0
 icon-scale=1
-nemo-icon-position-timestamp=1779363660
+nemo-icon-position-timestamp=1779364766
 [trash]
 nemo-icon-position=43,230
 monitor=0
 icon-scale=1
-nemo-icon-position-timestamp=1779363660
+nemo-icon-position-timestamp=1779364766
 [google-chrome]
 nemo-icon-position=43,330
 monitor=0
 icon-scale=1
-nemo-icon-position-timestamp=1779363660
+nemo-icon-position-timestamp=1779364766
 [kitty]
 nemo-icon-position=43,430
 monitor=0
 icon-scale=1
-nemo-icon-position-timestamp=1779363660
+nemo-icon-position-timestamp=1779364766
 [wireshark]
 nemo-icon-position=43,530
 monitor=0
 icon-scale=1
-nemo-icon-position-timestamp=1779363660
+nemo-icon-position-timestamp=1779364766
 [cinnamon-network-panel]
-nemo-icon-position=43,680
+nemo-icon-position=43,630
 monitor=0
 icon-scale=1
-nemo-icon-position-timestamp=1779363660
+nemo-icon-position-timestamp=1779364766
 METADATA
 
     chown "${DEST_USER}:${DEST_USER}" "$DEST_HOME/.config/nemo/desktop-metadata"
@@ -175,7 +175,7 @@ cat > "$DESKTOP_DIR/cinnamon-network-panel.desktop" << 'EOF'
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Advanced Network Configuration
+Name=Network
 Comment=Manage network connections
 Exec=nm-connection-editor
 Icon=nm-device-wired
