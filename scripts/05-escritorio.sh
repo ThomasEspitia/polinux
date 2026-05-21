@@ -137,19 +137,34 @@ Terminal=false
 Categories=System;TerminalEmulator;
 EOF
 
+# --- Advanced Network Configuration ---
+cat > "$DESKTOP_DIR/cinnamon-network-panel.desktop" << 'EOF'
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=Advanced Network Configuration
+Comment=Manage network connections
+Exec=nm-connection-editor
+Icon=nm-device-wired
+Terminal=false
+Categories=Network;Settings;
+EOF
+
 # Permisos: marcar como ejecutables (necesario para que Nemo los muestre)
 chmod +x "$DESKTOP_DIR/wireshark.desktop"
 chmod +x "$DESKTOP_DIR/google-chrome.desktop"
 chmod +x "$DESKTOP_DIR/kitty.desktop"
+chmod +x "$DESKTOP_DIR/cinnamon-network-panel.desktop"
 chown "${USUARIO}:${USUARIO}" "$DESKTOP_DIR/"*.desktop
 
 # Copiar a skel
-cp "$DESKTOP_DIR/wireshark.desktop"    "$SKEL_DESKTOP/"
-cp "$DESKTOP_DIR/google-chrome.desktop" "$SKEL_DESKTOP/"
-cp "$DESKTOP_DIR/kitty.desktop"        "$SKEL_DESKTOP/"
+cp "$DESKTOP_DIR/wireshark.desktop"              "$SKEL_DESKTOP/"
+cp "$DESKTOP_DIR/google-chrome.desktop"          "$SKEL_DESKTOP/"
+cp "$DESKTOP_DIR/kitty.desktop"                  "$SKEL_DESKTOP/"
+cp "$DESKTOP_DIR/cinnamon-network-panel.desktop" "$SKEL_DESKTOP/"
 chmod +x "$SKEL_DESKTOP/"*.desktop
 
-echo "  [OK] Accesos directos creados: Wireshark, Chrome, kitty"
+echo "  [OK] Accesos directos creados: Wireshark, Chrome, kitty, Network Config"
 
 # =============================================================
 # 4. JSON DE DESKLETS
@@ -177,7 +192,7 @@ configurar_json_desklets() {
     "global-custom-corner2": { "type": "colorchooser", "default": "black", "value": "rgba(191,64,64,0)" },
     "global-custom-time": { "type": "colorchooser", "default": "white", "value": "white" },
     "global-custom-shadow": { "type": "colorchooser", "default": "#447fab", "value": "rgb(15,37,74)" },
-    "global-custom-date": { "type": "colorchooser", "default": "#226182", "value": "rgb(255,255,255)" },
+    "global-custom-date": { "type": "colorchooser", "default": "#226182", "value": "rgb(153,193,241)" },
     "global-custom-bottom": { "type": "colorchooser", "default": "aliceblue", "value": "rgb(240,248,255)" },
     "global-custom-highlight": { "type": "colorchooser", "default": "#7bffff", "value": "#7bffff" },
     "global-color-invert-bottom": { "type": "switch", "default": false, "value": false },
@@ -392,7 +407,7 @@ echo ""
 echo " Iconos escritorio:"
 echo "   Home, Network, Trash   (visibles)"
 echo "   Computer, Volumes      (ocultos)"
-echo "   Wireshark, Chrome, kitty (accesos directos)"
+echo "   Wireshark, Chrome, kitty, Network Config (accesos directos)"
 echo ""
 echo " Desklets (1920x1080, bloqueados):"
 echo "   moonlight-clock  :1 → 1275,50   (reloj)"
